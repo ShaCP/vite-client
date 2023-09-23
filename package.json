@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "start": "vite",
+    "dev": "vite --port 4000",
+    "start": "vite --port 4000",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "test": "vitest",

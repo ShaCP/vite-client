@@ -1,0 +1,25 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "Launch Client",
+            "url": "http://localhost:4000",
+            "webRoot": "${workspaceFolder}/src",
+            "sourceMaps": true,
+            "sourceMapPathOverrides": {
+                "webpack:///./src/*": "${webRoot}/*"
+            },
+            "postDebugTask": "Terminate All Tasks",
+            "preLaunchTask": "npm:start",
+            "skipFiles": [
+                "<node_internals>/**",
+                "**/node_modules/**"
+            ],
+            // "runtimeArgs": [
+            //     "--incognito"
+            // ]
+        }
+    ]
+}
