@@ -1,10 +1,10 @@
 export interface Pokemon {
   abilities: Ability[]
   base_experience: number
-  forms: Species[]
+  forms: Details[]
   game_indices: GameIndex[]
   height: number
-  held_items: any[]
+  held_items: HeldItem[]
   id: number
   is_default: boolean
   location_area_encounters: string
@@ -12,38 +12,48 @@ export interface Pokemon {
   name: string
   order: number
   past_types: any[]
-  species: Species
+  species: Details
   sprites: Sprites
   stats: Stat[]
   types: Type[]
   weight: number
 }
 
+export interface HeldItem {
+  item: Details
+  version_details: VersionDetail[]
+}
+
+export interface VersionDetail {
+  rarity: number
+  version: Details
+}
+
 export interface Ability {
-  ability: Species
+  ability: Details
   is_hidden: boolean
   slot: number
 }
 
-export interface Species {
+export interface Details {
   name: string
   url: string
 }
 
 export interface GameIndex {
   game_index: number
-  version: Species
+  version: Details
 }
 
 export interface Move {
-  move: Species
+  move: Details
   version_group_details: VersionGroupDetail[]
 }
 
 export interface VersionGroupDetail {
   level_learned_at: number
-  move_learn_method: Species
-  version_group: Species
+  move_learn_method: Details
+  version_group: Details
 }
 
 export interface GenerationV {
@@ -69,13 +79,13 @@ export interface Versions {
 
 export interface Sprites {
   back_default: string
-  back_female: null
+  back_female: string
   back_shiny: string
-  back_shiny_female: null
+  back_shiny_female: string
   front_default: string
-  front_female: null
+  front_female: string
   front_shiny: string
-  front_shiny_female: null
+  front_shiny_female: string
   other?: Other
   versions?: Versions
   animated?: Sprites
@@ -133,9 +143,9 @@ export interface OfficialArtwork {
 
 export interface Home {
   front_default: string
-  front_female: null
+  front_female: string
   front_shiny: string
-  front_shiny_female: null
+  front_shiny_female: string
 }
 
 export interface GenerationVII {
@@ -145,7 +155,7 @@ export interface GenerationVII {
 
 export interface DreamWorld {
   front_default: string
-  front_female: null
+  front_female: string
 }
 
 export interface GenerationVIII {
@@ -161,10 +171,10 @@ export interface Other {
 export interface Stat {
   base_stat: number
   effort: number
-  stat: Species
+  stat: Details
 }
 
 export interface Type {
   slot: number
-  type: Species
+  type: Details
 }
