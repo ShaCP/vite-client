@@ -1,4 +1,7 @@
-import { useGetPokemonByNameQuery } from "./features/entities/pokemonApi"
+import {
+  useGetPokemonByNameQuery,
+  useGetPokemonMatchesByNameQuery,
+} from "./features/entities/pokemonApi"
 import "./App.css"
 import { useEffect, useState } from "react"
 import { FetchBaseQueryError } from "@reduxjs/toolkit/dist/query"
@@ -46,10 +49,10 @@ function App() {
 
   const debouncedPokemonName = useDebounce<string>(pokemonName)
 
-  const { data, isLoading, isError, error } = useGetPokemonByNameQuery(
+  const { data, isLoading, isError, error } = useGetPokemonMatchesByNameQuery(
     debouncedPokemonName.toLowerCase(),
     {
-      skip: !debouncedPokemonName,
+      skip: !debouncedPokemonName || debouncedPokemonName.length < 3,
     },
   )
 
@@ -74,14 +77,19 @@ function App() {
           <p>{errMsg}</p>
         ) : (
           <div>
-            {data?.name}
+            <ul>
+              {data?.map((name) => (
+                <li key={name}>{name}</li>
+              ))}
+            </ul>
+            {/* {data?.name}
             {data?.sprites.front_default && (
               <img
                 className="w-full"
                 alt={`${data?.name.toUpperCase()} sprite`}
                 src={data.sprites.front_default}
               />
-            )}
+            )} */}
           </div>
         )}
       </div>
