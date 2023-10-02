@@ -1,13 +1,22 @@
 import {
   useGetPokemonByNameQuery,
   useGetPokemonMatchesByNameQuery,
+  useLazyGetPokemonMatchesByNameQuery,
 } from "./features/entities/pokemonApi"
 import "./App.css"
 import { useEffect, useState } from "react"
 import { FetchBaseQueryError } from "@reduxjs/toolkit/dist/query"
 import { SerializedError } from "@reduxjs/toolkit"
 
-function useDebounce<T>(value: T, { delay = 1000, debounce = true }) {
+type DebounceOptions = {
+  delay?: number
+  debounce?: boolean
+}
+
+function useDebounce<T>(
+  value: T,
+  { delay = 1000, debounce = true }: DebounceOptions,
+) {
   const [debouncedValue, setDebouncedValue] = useState(value)
 
   useEffect(() => {
@@ -50,33 +59,29 @@ const getErrorMsg = (error: FetchBaseQueryError | SerializedError): string => {
 }
 
 function App() {
-  const [pokemonName, setPokemonName] = useState("")
   const [selectedPokemonName, setSelectedPokemonName] = useState("")
-
-  const debouncedPokemonName = useDebounce<string>(pokemonName, {
-    debounce: pokemonName.length > 2,
-  })
-
-  const {
-    currentData: pokemonMatches,
-    isLoading,
-    isError,
-    error,
-  } = useGetPokemonMatchesByNameQuery(debouncedPokemonName.toLowerCase(), {
-    skip: debouncedPokemonName.length < 3,
-  })
 
   const { data: pokemon } = useGetPokemonByNameQuery(selectedPokemonName, {
     skip: !selectedPokemonName,
   })
 
-  const onPokemonNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPokemonName(e.target.value)
+  const [trigger, { data: pokemonMatches, isLoading, isError, error }] =
+    useLazyGetPokemonMatchesByNameQuery()
+
+  const [options, setOptions] = useState<string[]>([])
+
+  useEffect(() => {
+    setOptions(pokemonMatches ?? [])
+  }, [pokemonMatches])
+
+  const onPokemonNameChange = (value: string) => {
+    setOptions([])
+    trigger(value, true)
   }
 
   const onPokemonSelectChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedPokemonName(e.target.value)
-    setPokemonName(e.target.value)
+    setOptions([])
   }
 
   const errMsg: React.ReactNode = error ? getErrorMsg(error) : null
@@ -86,12 +91,11 @@ function App() {
       <div className="w-56 mt-10">
         <TypeAhead
           className="border-2 border-slate-200 p-1"
-          value={pokemonName}
           selectedValue={selectedPokemonName}
           onValueChange={onPokemonNameChange}
           onSelectionChange={onPokemonSelectChange}
           placeholder="Enter pokemon name"
-          options={pokemonMatches}
+          options={options}
         />
         {isLoading ? (
           "...loading"
@@ -115,17 +119,15 @@ function App() {
 }
 
 type TypeaheadProps = {
-  value: string
   selectedValue: string
   options?: string[]
-  onValueChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onValueChange: (e: string) => void
   onSelectionChange: (e: React.ChangeEvent<HTMLInputElement>) => void
   className: string
   placeholder: string
 }
 
 const TypeAhead = ({
-  value = "",
   selectedValue = "",
   options = [],
   onValueChange,
@@ -133,6 +135,14 @@ const TypeAhead = ({
   className,
   placeholder,
 }: TypeaheadProps) => {
+  const [value, setValue] = useState("")
+
+  const debouncedValue = useDebounce<string>(value, {})
+
+  useEffect(() => {
+    if (debouncedValue.length > 2) onValueChange(debouncedValue)
+  }, [debouncedValue])
+
   return (
     <div>
       <input
@@ -140,27 +150,30 @@ const TypeAhead = ({
         placeholder={placeholder}
         value={value}
         onChange={(e) => {
-          onValueChange(e)
+          return setValue(e.target.value)
         }}
       />
-      <ul role="listbox">
-        {options.map((o) => (
-          <li key={o} role="option">
-            <label>
-              {o}
-              <input
-                style={{ display: "none" }}
-                type="radio"
-                value={o}
-                onChange={(e) => {
-                  onSelectionChange(e)
-                }}
-                checked={selectedValue === o}
-              />
-            </label>
-          </li>
-        ))}
-      </ul>
+      {value === debouncedValue && (
+        <ul role="listbox">
+          {options.map((o) => (
+            <li key={o} role="option">
+              <label>
+                {o}
+                <input
+                  style={{ display: "none" }}
+                  type="radio"
+                  value={o}
+                  onChange={(e) => {
+                    onSelectionChange(e)
+                    setValue(o)
+                  }}
+                  checked={selectedValue === o}
+                />
+              </label>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   )
 }
