@@ -7,14 +7,19 @@ import { useEffect, useState } from "react"
 import { FetchBaseQueryError } from "@reduxjs/toolkit/dist/query"
 import { SerializedError } from "@reduxjs/toolkit"
 
-function useDebounce<T>(value: T, delay: number = 1000) {
+function useDebounce<T>(value: T, { delay = 1000, debounce = true }) {
   const [debouncedValue, setDebouncedValue] = useState(value)
 
   useEffect(() => {
-    const handler = setTimeout(() => {
+    let handler: number
+    if (debounce) {
+      handler = window.setTimeout(() => {
+        setDebouncedValue(value)
+        console.log("debounce")
+      }, delay)
+    } else {
       setDebouncedValue(value)
-    }, delay)
-
+    }
     return () => clearTimeout(handler)
   })
 
@@ -46,17 +51,31 @@ const getErrorMsg = (error: FetchBaseQueryError | SerializedError): string => {
 
 function App() {
   const [pokemonName, setPokemonName] = useState("")
+  const [selectedPokemonName, setSelectedPokemonName] = useState("")
 
-  const debouncedPokemonName = useDebounce<string>(pokemonName)
+  const debouncedPokemonName = useDebounce<string>(pokemonName, {
+    debounce: pokemonName.length > 2,
+  })
 
-  const { data, isLoading, isError, error } = useGetPokemonMatchesByNameQuery(
-    debouncedPokemonName.toLowerCase(),
-    {
-      skip: !debouncedPokemonName || debouncedPokemonName.length < 3,
-    },
-  )
+  const {
+    currentData: pokemonMatches,
+    isLoading,
+    isError,
+    error,
+  } = useGetPokemonMatchesByNameQuery(debouncedPokemonName.toLowerCase(), {
+    skip: debouncedPokemonName.length < 3,
+  })
+
+  const { data: pokemon } = useGetPokemonByNameQuery(selectedPokemonName, {
+    skip: !selectedPokemonName,
+  })
 
   const onPokemonNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPokemonName(e.target.value)
+  }
+
+  const onPokemonSelectChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setSelectedPokemonName(e.target.value)
     setPokemonName(e.target.value)
   }
 
@@ -65,11 +84,14 @@ function App() {
   return (
     <div className="App flex flex-col items-center">
       <div className="w-56 mt-10">
-        <input
+        <TypeAhead
           className="border-2 border-slate-200 p-1"
           value={pokemonName}
-          onChange={onPokemonNameChange}
+          selectedValue={selectedPokemonName}
+          onValueChange={onPokemonNameChange}
+          onSelectionChange={onPokemonSelectChange}
           placeholder="Enter pokemon name"
+          options={pokemonMatches}
         />
         {isLoading ? (
           "...loading"
@@ -77,19 +99,14 @@ function App() {
           <p>{errMsg}</p>
         ) : (
           <div>
-            <ul>
-              {data?.map((name) => (
-                <li key={name}>{name}</li>
-              ))}
-            </ul>
-            {/* {data?.name}
-            {data?.sprites.front_default && (
+            {pokemon?.name}
+            {pokemon?.sprites.front_default && (
               <img
                 className="w-full"
-                alt={`${data?.name.toUpperCase()} sprite`}
-                src={data.sprites.front_default}
+                alt={`${pokemon?.name.toUpperCase()} sprite`}
+                src={pokemon.sprites.front_default}
               />
-            )} */}
+            )}
           </div>
         )}
       </div>
@@ -97,4 +114,54 @@ function App() {
   )
 }
 
+type TypeaheadProps = {
+  value: string
+  selectedValue: string
+  options?: string[]
+  onValueChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onSelectionChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  className: string
+  placeholder: string
+}
+
+const TypeAhead = ({
+  value = "",
+  selectedValue = "",
+  options = [],
+  onValueChange,
+  onSelectionChange,
+  className,
+  placeholder,
+}: TypeaheadProps) => {
+  return (
+    <div>
+      <input
+        className={className}
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => {
+          onValueChange(e)
+        }}
+      />
+      <ul role="listbox">
+        {options.map((o) => (
+          <li key={o} role="option">
+            <label>
+              {o}
+              <input
+                style={{ display: "none" }}
+                type="radio"
+                value={o}
+                onChange={(e) => {
+                  onSelectionChange(e)
+                }}
+                checked={selectedValue === o}
+              />
+            </label>
+          </li>
+        ))}
+      </ul>
+    </div>
+  )
+}
 export default App
