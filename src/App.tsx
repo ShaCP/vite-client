@@ -65,23 +65,36 @@ function App() {
     skip: !selectedPokemonName,
   })
 
-  const [trigger, { data: pokemonMatches, isLoading, isError, error }] =
-    useLazyGetPokemonMatchesByNameQuery()
+  const [
+    trigger,
+    {
+      data: pokemonMatches = [],
+      isLoading,
+      isError,
+      isSuccess,
+      error,
+      isFetching,
+    },
+  ] = useLazyGetPokemonMatchesByNameQuery()
 
-  const [options, setOptions] = useState<string[]>([])
-
-  useEffect(() => {
-    setOptions(pokemonMatches ?? [])
-  }, [pokemonMatches])
+  console.log(
+    "isSuccess",
+    isSuccess,
+    "isLoading",
+    isLoading,
+    "data",
+    "isFetching",
+    isFetching,
+    "data",
+    pokemonMatches,
+  )
 
   const onPokemonNameChange = (value: string) => {
-    setOptions([])
     trigger(value, true)
   }
 
   const onPokemonSelectChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setSelectedPokemonName(e.target.value)
-    setOptions([])
   }
 
   const errMsg: React.ReactNode = error ? getErrorMsg(error) : null
@@ -95,7 +108,7 @@ function App() {
           onValueChange={onPokemonNameChange}
           onSelectionChange={onPokemonSelectChange}
           placeholder="Enter pokemon name"
-          options={options}
+          options={isSuccess ? pokemonMatches : []}
         />
         {isLoading ? (
           "...loading"
@@ -120,7 +133,7 @@ function App() {
 
 type TypeaheadProps = {
   selectedValue: string
-  options?: string[]
+  options: string[]
   onValueChange: (e: string) => void
   onSelectionChange: (e: React.ChangeEvent<HTMLInputElement>) => void
   className: string
@@ -129,18 +142,17 @@ type TypeaheadProps = {
 
 const TypeAhead = ({
   selectedValue = "",
-  options = [],
+  options,
   onValueChange,
   onSelectionChange,
   className,
   placeholder,
 }: TypeaheadProps) => {
   const [value, setValue] = useState("")
-
   const debouncedValue = useDebounce<string>(value, {})
 
   useEffect(() => {
-    if (debouncedValue.length > 2) onValueChange(debouncedValue)
+    onValueChange(debouncedValue)
   }, [debouncedValue])
 
   return (
@@ -150,7 +162,7 @@ const TypeAhead = ({
         placeholder={placeholder}
         value={value}
         onChange={(e) => {
-          return setValue(e.target.value)
+          setValue(e.target.value)
         }}
       />
       {value === debouncedValue && (

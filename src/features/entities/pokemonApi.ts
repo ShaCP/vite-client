@@ -9,7 +9,18 @@ export const pokemonApi = createApi({
       query: (name) => `pokemon/${name}`,
     }),
     getPokemonMatchesByName: builder.query<string[], string>({
-      query: (name) => `pokemon/matches/${name}`,
+      queryFn: async (name, queryApi, extraOptions, baseQuery) => {
+        // Check the argument passed to the endpoint
+        if (!name || name.length < 3) {
+          // If it matches the condition, return a custom value
+          return { data: []  }
+        }
+
+        // If not, proceed with the actual HTTP call to the specific endpoint
+        const result = await baseQuery(`pokemon/matches/${name}`) as { data: string[] }
+
+        return result
+      },
     }),
   }),
 })
