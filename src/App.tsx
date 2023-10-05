@@ -1,10 +1,11 @@
 import {
   useGetPokemonByNameQuery,
   useGetPokemonMatchesByNameQuery,
+  useLazyGetPokemonByNameQuery,
   useLazyGetPokemonMatchesByNameQuery,
 } from "./features/entities/pokemonApi"
 import "./App.css"
-import { useEffect, useState } from "react"
+import React, { useEffect, useState } from "react"
 import { FetchBaseQueryError } from "@reduxjs/toolkit/dist/query"
 import { SerializedError } from "@reduxjs/toolkit"
 
@@ -24,7 +25,6 @@ function useDebounce<T>(
     if (debounce) {
       handler = window.setTimeout(() => {
         setDebouncedValue(value)
-        console.log("debounce")
       }, delay)
     } else {
       setDebouncedValue(value)
@@ -59,42 +59,19 @@ const getErrorMsg = (error: FetchBaseQueryError | SerializedError): string => {
 }
 
 function App() {
-  const [selectedPokemonName, setSelectedPokemonName] = useState("")
-
-  const { data: pokemon } = useGetPokemonByNameQuery(selectedPokemonName, {
-    skip: !selectedPokemonName,
-  })
+  const [getPokemon, { data: pokemon }] = useLazyGetPokemonByNameQuery()
 
   const [
-    trigger,
-    {
-      data: pokemonMatches = [],
-      isLoading,
-      isError,
-      isSuccess,
-      error,
-      isFetching,
-    },
+    getPokemonMatches,
+    { data: pokemonMatches = [], isLoading, isError, error },
   ] = useLazyGetPokemonMatchesByNameQuery()
 
-  console.log(
-    "isSuccess",
-    isSuccess,
-    "isLoading",
-    isLoading,
-    "data",
-    "isFetching",
-    isFetching,
-    "data",
-    pokemonMatches,
-  )
-
   const onPokemonNameChange = (value: string) => {
-    trigger(value, true)
+    getPokemonMatches(value, true)
   }
 
-  const onPokemonSelectChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSelectedPokemonName(e.target.value)
+  const onPokemonSelect = (value: string) => {
+    getPokemon(value)
   }
 
   const errMsg: React.ReactNode = error ? getErrorMsg(error) : null
@@ -104,11 +81,10 @@ function App() {
       <div className="w-56 mt-10">
         <TypeAhead
           className="border-2 border-slate-200 p-1"
-          selectedValue={selectedPokemonName}
           onValueChange={onPokemonNameChange}
-          onSelectionChange={onPokemonSelectChange}
+          onSelect={onPokemonSelect}
           placeholder="Enter pokemon name"
-          options={isSuccess ? pokemonMatches : []}
+          options={pokemonMatches}
         />
         {isLoading ? (
           "...loading"
@@ -132,24 +108,26 @@ function App() {
 }
 
 type TypeaheadProps = {
-  selectedValue: string
   options: string[]
-  onValueChange: (e: string) => void
-  onSelectionChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onValueChange: (value: string) => void
+  onSelect: (value: string) => void
   className: string
   placeholder: string
 }
 
 const TypeAhead = ({
-  selectedValue = "",
   options,
   onValueChange,
-  onSelectionChange,
+  onSelect,
   className,
   placeholder,
 }: TypeaheadProps) => {
-  const [value, setValue] = useState("")
-  const debouncedValue = useDebounce<string>(value, {})
+  const [value, setValue] = useState<null | string>("")
+  const [selectedValue, setSelectedValue] = useState("")
+  const nonNullValue = value ?? ""
+  const debouncedValue = useDebounce<string>(nonNullValue, {
+    debounce: nonNullValue.length > 2,
+  })
 
   useEffect(() => {
     onValueChange(debouncedValue)
@@ -160,7 +138,7 @@ const TypeAhead = ({
       <input
         className={className}
         placeholder={placeholder}
-        value={value}
+        value={value ?? selectedValue}
         onChange={(e) => {
           setValue(e.target.value)
         }}
@@ -168,20 +146,16 @@ const TypeAhead = ({
       {value === debouncedValue && (
         <ul role="listbox">
           {options.map((o) => (
-            <li key={o} role="option">
-              <label>
-                {o}
-                <input
-                  style={{ display: "none" }}
-                  type="radio"
-                  value={o}
-                  onChange={(e) => {
-                    onSelectionChange(e)
-                    setValue(o)
-                  }}
-                  checked={selectedValue === o}
-                />
-              </label>
+            <li
+              key={o}
+              role="option"
+              onClick={() => {
+                onSelect(o)
+                setSelectedValue(o)
+                setValue(null)
+              }}
+            >
+              {o}
             </li>
           ))}
         </ul>
