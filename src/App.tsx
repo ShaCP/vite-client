@@ -109,6 +109,7 @@ function App() {
           onSelectionChange={onPokemonSelectChange}
           placeholder="Enter pokemon name"
           options={isSuccess ? pokemonMatches : []}
+          isLoading={isLoading || isFetching}
         />
         {isLoading ? (
           "...loading"
@@ -138,6 +139,7 @@ type TypeaheadProps = {
   onSelectionChange: (e: React.ChangeEvent<HTMLInputElement>) => void
   className: string
   placeholder: string
+  isLoading: boolean
 }
 
 const TypeAhead = ({
@@ -147,13 +149,28 @@ const TypeAhead = ({
   onSelectionChange,
   className,
   placeholder,
+  isLoading = false,
 }: TypeaheadProps) => {
   const [value, setValue] = useState("")
+  const [wasValueJustSelected, setWasValueJustSelected] = useState(false)
   const debouncedValue = useDebounce<string>(value, {})
+  const [localOptions, setLocalOptions] = useState(options)
 
   useEffect(() => {
-    onValueChange(debouncedValue)
+    if (debouncedValue.length > 2) {
+      onValueChange(debouncedValue)
+    }
   }, [debouncedValue])
+
+  console.log(value, debouncedValue, options)
+
+  useEffect(() => {
+    if (debouncedValue && debouncedValue.length > 2 && !wasValueJustSelected) {
+      setLocalOptions(options)
+    } else {
+      setLocalOptions([])
+    }
+  }, [options, value, wasValueJustSelected])
 
   return (
     <div>
@@ -162,12 +179,14 @@ const TypeAhead = ({
         placeholder={placeholder}
         value={value}
         onChange={(e) => {
+          setLocalOptions([])
+          setWasValueJustSelected(false)
           setValue(e.target.value)
         }}
       />
-      {value === debouncedValue && (
+      {value === debouncedValue && !isLoading && (
         <ul role="listbox">
-          {options.map((o) => (
+          {localOptions.map((o) => (
             <li key={o} role="option">
               <label>
                 {o}
@@ -178,8 +197,8 @@ const TypeAhead = ({
                   onChange={(e) => {
                     onSelectionChange(e)
                     setValue(o)
+                    setWasValueJustSelected(true)
                   }}
-                  checked={selectedValue === o}
                 />
               </label>
             </li>
