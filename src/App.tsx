@@ -73,7 +73,7 @@ function App() {
 
   const onPokemonSelection = (value: string) => {
     setSelectedPokemonName(value)
-    setPokemonName(value)
+    setPokemonName("")
   }
 
   const errMsg: React.ReactNode = error ? getErrorMsg(error) : null
@@ -127,28 +127,35 @@ const TypeAhead = ({
   className,
   placeholder,
 }: TypeaheadProps) => {
-  const [localValue, setLocalValue] = useState("")
+  const [localValue, setLocalValue] = useState<string | null>("")
 
   useEffect(() => {
     onInputChange(localValue)
   }, [localValue])
 
   return (
-    <div>
+    <div className="flex flex-col relative">
       <input
         className={className}
         placeholder={placeholder}
         value={value}
         onChange={(e) => setLocalValue(e.target.value)}
       />
-      <ul role="listbox">
+      <ul
+        role="listbox"
+        className={`text-left absolute top-full bg-white w-full ${
+          options.length > 0 ? "border-2 border-slate-200" : ""
+        }`}
+      >
         {options.map((o) => (
           <li
+            className="p-1 hover:bg-slate-200 cursor-pointer"
             key={o}
             role="option"
             onClick={() => {
               onSelection(o)
               onInputChange(null)
+              setLocalValue(null)
             }}
           >
             {o}
