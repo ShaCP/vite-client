@@ -1,5 +1,6 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react"
 import { Pokemon } from "./types"
+import { QueryReturnValue } from "@reduxjs/toolkit/dist/query/baseQueryTypes"
 
 export const pokemonApi = createApi({
   reducerPath: "pokemonApi",
@@ -9,7 +10,12 @@ export const pokemonApi = createApi({
       query: (name) => `pokemon/${name}`,
     }),
     getPokemonMatchesByName: builder.query<string[], string>({
-      query: (name) => `pokemon/matches/${name}`,
+      queryFn: async (name, api, extraOptions, baseQuery) => {
+        if (name.length > 2) {
+          return baseQuery(`pokemon/matches/${name}`) as { data: string[] }
+        }
+        return { data: [] }
+      },
     }),
   }),
 })

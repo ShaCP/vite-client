@@ -15,7 +15,6 @@ function useDebounce<T>(value: T, { delay = 1000, debounce = true }) {
     if (debounce) {
       handler = window.setTimeout(() => {
         setDebouncedValue(value)
-        console.log("debounce")
       }, delay)
     } else {
       setDebouncedValue(value)
@@ -50,11 +49,11 @@ const getErrorMsg = (error: FetchBaseQueryError | SerializedError): string => {
 }
 
 function App() {
-  const [pokemonName, setPokemonName] = useState("")
+  const [pokemonName, setPokemonName] = useState<null | string>("")
   const [selectedPokemonName, setSelectedPokemonName] = useState("")
 
-  const debouncedPokemonName = useDebounce<string>(pokemonName, {
-    debounce: pokemonName.length > 2,
+  const debouncedPokemonName = useDebounce<string>(pokemonName ?? "", {
+    debounce: !!pokemonName && pokemonName.length > 2,
   })
 
   const {
@@ -62,21 +61,19 @@ function App() {
     isLoading,
     isError,
     error,
-  } = useGetPokemonMatchesByNameQuery(debouncedPokemonName.toLowerCase(), {
-    skip: debouncedPokemonName.length < 3,
-  })
+  } = useGetPokemonMatchesByNameQuery(debouncedPokemonName.toLowerCase())
 
   const { data: pokemon } = useGetPokemonByNameQuery(selectedPokemonName, {
     skip: !selectedPokemonName,
   })
 
-  const onPokemonNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setPokemonName(e.target.value)
+  const onPokemonNameChange = (value: string | null) => {
+    setPokemonName(value)
   }
 
-  const onPokemonSelectChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSelectedPokemonName(e.target.value)
-    setPokemonName(e.target.value)
+  const onPokemonSelection = (value: string) => {
+    setSelectedPokemonName(value)
+    setPokemonName(value)
   }
 
   const errMsg: React.ReactNode = error ? getErrorMsg(error) : null
@@ -86,10 +83,9 @@ function App() {
       <div className="w-56 mt-10">
         <TypeAhead
           className="border-2 border-slate-200 p-1"
-          value={pokemonName}
-          selectedValue={selectedPokemonName}
-          onValueChange={onPokemonNameChange}
-          onSelectionChange={onPokemonSelectChange}
+          value={pokemonName ?? selectedPokemonName}
+          onInputChange={onPokemonNameChange}
+          onSelection={onPokemonSelection}
           placeholder="Enter pokemon name"
           options={pokemonMatches}
         />
@@ -116,48 +112,46 @@ function App() {
 
 type TypeaheadProps = {
   value: string
-  selectedValue: string
   options?: string[]
-  onValueChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-  onSelectionChange: (e: React.ChangeEvent<HTMLInputElement>) => void
+  onInputChange: (value: string | null) => void
+  onSelection: (value: string) => void
   className: string
   placeholder: string
 }
 
 const TypeAhead = ({
   value = "",
-  selectedValue = "",
   options = [],
-  onValueChange,
-  onSelectionChange,
+  onInputChange,
+  onSelection,
   className,
   placeholder,
 }: TypeaheadProps) => {
+  const [localValue, setLocalValue] = useState("")
+
+  useEffect(() => {
+    onInputChange(localValue)
+  }, [localValue])
+
   return (
     <div>
       <input
         className={className}
         placeholder={placeholder}
         value={value}
-        onChange={(e) => {
-          onValueChange(e)
-        }}
+        onChange={(e) => setLocalValue(e.target.value)}
       />
       <ul role="listbox">
         {options.map((o) => (
-          <li key={o} role="option">
-            <label>
-              {o}
-              <input
-                style={{ display: "none" }}
-                type="radio"
-                value={o}
-                onChange={(e) => {
-                  onSelectionChange(e)
-                }}
-                checked={selectedValue === o}
-              />
-            </label>
+          <li
+            key={o}
+            role="option"
+            onClick={() => {
+              onSelection(o)
+              onInputChange(null)
+            }}
+          >
+            {o}
           </li>
         ))}
       </ul>
