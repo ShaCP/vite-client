@@ -178,3 +178,17 @@ export interface Type {
   slot: number
   type: Details
 }
+
+/* pokemon matches */
+
+export interface PokemonMatches {
+  totalCount: number
+  totalPages: number
+  page: number
+  results: string[]
+}
+
+export interface PokemonMatchesQuery {
+  name: string
+  page: number
+}

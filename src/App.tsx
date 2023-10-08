@@ -51,6 +51,7 @@ const getErrorMsg = (error: FetchBaseQueryError | SerializedError): string => {
 function App() {
   const [pokemonName, setPokemonName] = useState<null | string>("")
   const [selectedPokemonName, setSelectedPokemonName] = useState("")
+  const [page, setPage] = useState(1)
 
   const debouncedPokemonName = useDebounce<string>(pokemonName ?? "", {
     debounce: !!pokemonName && pokemonName.length > 2,
@@ -61,7 +62,10 @@ function App() {
     isLoading,
     isError,
     error,
-  } = useGetPokemonMatchesByNameQuery(debouncedPokemonName.toLowerCase())
+  } = useGetPokemonMatchesByNameQuery({
+    name: debouncedPokemonName.toLowerCase(),
+    page,
+  })
 
   const { data: pokemon } = useGetPokemonByNameQuery(selectedPokemonName, {
     skip: !selectedPokemonName,
@@ -69,12 +73,15 @@ function App() {
 
   const onPokemonNameChange = (value: string | null) => {
     setPokemonName(value)
+    setPage(1)
   }
 
   const onPokemonSelection = (value: string) => {
     setSelectedPokemonName(value)
     setPokemonName("")
   }
+
+  const onPaginate = () => setPage((pg) => pg + 1)
 
   const errMsg: React.ReactNode = error ? getErrorMsg(error) : null
 
@@ -86,8 +93,10 @@ function App() {
           value={pokemonName ?? selectedPokemonName}
           onInputChange={onPokemonNameChange}
           onSelection={onPokemonSelection}
+          onPaginate={onPaginate}
           placeholder="Enter pokemon name"
-          options={pokemonMatches}
+          options={pokemonMatches?.results}
+          showPagination={page < (pokemonMatches?.totalPages ?? 0)}
         />
         {isLoading ? (
           "...loading"
@@ -115,7 +124,9 @@ type TypeaheadProps = {
   options?: string[]
   onInputChange: (value: string | null) => void
   onSelection: (value: string) => void
+  onPaginate: () => void
   className: string
+  showPagination: boolean
   placeholder: string
 }
 
@@ -124,6 +135,8 @@ const TypeAhead = ({
   options = [],
   onInputChange,
   onSelection,
+  onPaginate,
+  showPagination = false,
   className,
   placeholder,
 }: TypeaheadProps) => {
@@ -141,27 +154,37 @@ const TypeAhead = ({
         value={value}
         onChange={(e) => setLocalValue(e.target.value)}
       />
-      <ul
-        role="listbox"
-        className={`text-left absolute top-full bg-white w-full ${
-          options.length > 0 ? "border-2 border-slate-200" : ""
-        }`}
-      >
-        {options.map((o) => (
-          <li
-            className="p-1 hover:bg-slate-200 cursor-pointer"
-            key={o}
-            role="option"
-            onClick={() => {
-              onSelection(o)
-              onInputChange(null)
-              setLocalValue(null)
-            }}
-          >
-            {o}
-          </li>
-        ))}
-      </ul>
+      {options.length > 0 && (
+        <ul
+          role="listbox"
+          className={`text-left absolute top-full bg-white w-full ${
+            options.length > 0 ? "border-2 border-slate-200" : ""
+          }`}
+        >
+          {options.map((o) => (
+            <li
+              className="p-1 hover:bg-slate-200 cursor-pointer"
+              key={o}
+              role="option"
+              onClick={() => {
+                onSelection(o)
+                onInputChange(null)
+                setLocalValue(null)
+              }}
+            >
+              {o}
+            </li>
+          ))}
+          {options.length > 0 && showPagination && (
+            <li
+              className="p-1 bg-slate-100 hover:bg-slate-200 cursor-pointer text-center"
+              onClick={onPaginate}
+            >
+              More results...
+            </li>
+          )}
+        </ul>
+      )}
     </div>
   )
 }
