@@ -6,6 +6,7 @@ import "./App.css"
 import { useEffect, useState } from "react"
 import { FetchBaseQueryError } from "@reduxjs/toolkit/dist/query"
 import { SerializedError } from "@reduxjs/toolkit"
+import { PokemonMatches } from "./features/entities/types"
 
 function useDebounce<T>(value: T, { delay = 1000, debounce = true }) {
   const [debouncedValue, setDebouncedValue] = useState(value)
@@ -52,6 +53,7 @@ function App() {
   const [pokemonName, setPokemonName] = useState<null | string>("")
   const [selectedPokemonName, setSelectedPokemonName] = useState("")
   const [page, setPage] = useState(1)
+  const [combinedOptions, setCombinedOptions] = useState<string[]>([])
 
   const debouncedPokemonName = useDebounce<string>(pokemonName ?? "", {
     debounce: !!pokemonName && pokemonName.length > 2,
@@ -59,7 +61,7 @@ function App() {
 
   const {
     currentData: pokemonMatches,
-    isLoading,
+    isLoading: isLoadingMatches,
     isError,
     error,
   } = useGetPokemonMatchesByNameQuery({
@@ -67,9 +69,18 @@ function App() {
     page,
   })
 
-  const { data: pokemon } = useGetPokemonByNameQuery(selectedPokemonName, {
-    skip: !selectedPokemonName,
-  })
+  const { data: pokemon, isLoading: isLoadingPokemon } =
+    useGetPokemonByNameQuery(selectedPokemonName, {
+      skip: !selectedPokemonName,
+    })
+
+  useEffect(() => {
+    if (page > 1) {
+      setCombinedOptions((o) => o.concat(pokemonMatches?.results ?? []))
+    } else {
+      setCombinedOptions(pokemonMatches?.results ?? [])
+    }
+  }, [pokemonMatches?.results, page])
 
   const onPokemonNameChange = (value: string | null) => {
     setPokemonName(value)
@@ -95,10 +106,10 @@ function App() {
           onSelection={onPokemonSelection}
           onPaginate={onPaginate}
           placeholder="Enter pokemon name"
-          options={pokemonMatches?.results}
+          options={combinedOptions}
           showPagination={page < (pokemonMatches?.totalPages ?? 0)}
         />
-        {isLoading ? (
+        {isLoadingPokemon ? (
           "...loading"
         ) : isError ? (
           <p>{errMsg}</p>
@@ -132,7 +143,7 @@ type TypeaheadProps = {
 
 const TypeAhead = ({
   value = "",
-  options = [],
+  options,
   onInputChange,
   onSelection,
   onPaginate,
@@ -140,21 +151,15 @@ const TypeAhead = ({
   className,
   placeholder,
 }: TypeaheadProps) => {
-  const [localValue, setLocalValue] = useState<string | null>("")
-
-  useEffect(() => {
-    onInputChange(localValue)
-  }, [localValue])
-
   return (
     <div className="flex flex-col relative">
       <input
         className={className}
         placeholder={placeholder}
         value={value}
-        onChange={(e) => setLocalValue(e.target.value)}
+        onChange={(e) => onInputChange(e.target.value)}
       />
-      {options.length > 0 && (
+      {!!options?.length && (
         <ul
           role="listbox"
           className={`text-left absolute top-full bg-white w-full ${
@@ -169,7 +174,6 @@ const TypeAhead = ({
               onClick={() => {
                 onSelection(o)
                 onInputChange(null)
-                setLocalValue(null)
               }}
             >
               {o}
