@@ -54,7 +54,7 @@ function App() {
   const [pokemonName, setPokemonName] = useState<null | string>("")
   const [selectedPokemonName, setSelectedPokemonName] = useState("")
   const [page, setPage] = useState(1)
-  const [combinedOptions, setCombinedOptions] = useState<string[]>([])
+  const [suggestions, setSuggestions] = useState<string[]>([])
 
   const debouncedPokemonName = useDebounce<string>(pokemonName ?? "", {
     debounce: !!pokemonName && pokemonName.length > 2,
@@ -79,9 +79,11 @@ function App() {
 
   useEffect(() => {
     if (page > 1) {
-      setCombinedOptions((o) => o.concat(currentPokemonMatches?.results ?? []))
+      setSuggestions((suggestions) =>
+        suggestions.concat(currentPokemonMatches?.results ?? []),
+      )
     } else {
-      setCombinedOptions(pokemonMatches?.results ?? [])
+      setSuggestions(pokemonMatches?.results ?? [])
     }
   }, [pokemonMatches?.results, page, currentPokemonMatches?.results])
 
@@ -99,7 +101,7 @@ function App() {
 
   const errMsg = error ? getErrorMsg(error) : null
 
-  console.log(isLoadingMatches, pokemonMatches)
+  console.log(isLoadingMatches, pokemonMatches, isLoadingPokemon)
 
   return (
     <div className="App flex flex-col items-center">
@@ -111,7 +113,7 @@ function App() {
           onSelection={onPokemonSelection}
           onPaginate={onPaginate}
           placeholder="Enter pokemon name"
-          options={combinedOptions}
+          suggestions={suggestions}
           showPagination={page < (pokemonMatches?.totalPages ?? 0)}
         />
         {isLoadingPokemon ? (
@@ -137,7 +139,7 @@ function App() {
 
 type TypeaheadProps = {
   value: string
-  options?: string[]
+  suggestions?: string[]
   onInputChange: (value: string | null) => void
   onSelection: (value: string) => void
   onPaginate: () => void
@@ -149,7 +151,7 @@ type TypeaheadProps = {
 const TypeAhead = React.memo(
   ({
     value = "",
-    options,
+    suggestions,
     onInputChange,
     onSelection,
     onPaginate,
@@ -164,27 +166,27 @@ const TypeAhead = React.memo(
         value={value}
         onChange={(e) => onInputChange(e.target.value)}
       />
-      {!!options?.length && (
+      {!!suggestions?.length && (
         <ul
           role="listbox"
           className={`text-left absolute top-full bg-white w-full ${
-            options.length > 0 ? "border-2 border-slate-200" : ""
+            suggestions.length > 0 ? "border-2 border-slate-200" : ""
           }`}
         >
-          {options.map((o) => (
+          {suggestions.map((suggestion) => (
             <li
               className="p-1 hover:bg-slate-200 cursor-pointer"
-              key={o}
+              key={suggestion}
               role="option"
               onClick={() => {
-                onSelection(o)
+                onSelection(suggestion)
                 onInputChange(null)
               }}
             >
-              {o}
+              {suggestion}
             </li>
           ))}
-          {options.length > 0 && showPagination && (
+          {suggestions.length > 0 && showPagination && (
             <li
               className="p-1 bg-slate-100 hover:bg-slate-200 cursor-pointer text-center"
               onClick={onPaginate}
