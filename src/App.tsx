@@ -63,6 +63,7 @@ function App() {
   const {
     // If I use "currentData" instead, there will be an empty array while it loads new results, causing a flash between results
     data: pokemonMatches,
+    currentData: currentPokemonMatches,
     isLoading: isLoadingMatches,
     isError,
     error,
@@ -78,11 +79,11 @@ function App() {
 
   useEffect(() => {
     if (page > 1) {
-      setCombinedOptions((o) => o.concat(pokemonMatches?.results ?? []))
+      setCombinedOptions((o) => o.concat(currentPokemonMatches?.results ?? []))
     } else {
       setCombinedOptions(pokemonMatches?.results ?? [])
     }
-  }, [pokemonMatches?.results, page])
+  }, [pokemonMatches?.results, page, currentPokemonMatches?.results])
 
   const onPokemonNameChange = (value: string | null) => {
     setPokemonName(value)
@@ -96,7 +97,7 @@ function App() {
 
   const onPaginate = () => setPage((pg) => pg + 1)
 
-  const errMsg: React.ReactNode = error ? getErrorMsg(error) : null
+  const errMsg = error ? getErrorMsg(error) : null
 
   console.log(isLoadingMatches, pokemonMatches)
 
