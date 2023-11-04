@@ -7,6 +7,7 @@ import { useEffect, useState } from "react"
 import { FetchBaseQueryError } from "@reduxjs/toolkit/dist/query"
 import { SerializedError } from "@reduxjs/toolkit"
 import { PokemonMatches } from "./features/entities/types"
+import React from "react"
 
 function useDebounce<T>(value: T, { delay = 1000, debounce = true }) {
   const [debouncedValue, setDebouncedValue] = useState(value)
@@ -60,7 +61,8 @@ function App() {
   })
 
   const {
-    currentData: pokemonMatches,
+    // If I use "currentData" instead, there will be an empty array while it loads new results, causing a flash between results
+    data: pokemonMatches,
     isLoading: isLoadingMatches,
     isError,
     error,
@@ -95,6 +97,8 @@ function App() {
   const onPaginate = () => setPage((pg) => pg + 1)
 
   const errMsg: React.ReactNode = error ? getErrorMsg(error) : null
+
+  console.log(isLoadingMatches, pokemonMatches)
 
   return (
     <div className="App flex flex-col items-center">
@@ -141,17 +145,17 @@ type TypeaheadProps = {
   placeholder: string
 }
 
-const TypeAhead = ({
-  value = "",
-  options,
-  onInputChange,
-  onSelection,
-  onPaginate,
-  showPagination = false,
-  className,
-  placeholder,
-}: TypeaheadProps) => {
-  return (
+const TypeAhead = React.memo(
+  ({
+    value = "",
+    options,
+    onInputChange,
+    onSelection,
+    onPaginate,
+    showPagination = false,
+    className,
+    placeholder,
+  }: TypeaheadProps) => (
     <div className="flex flex-col relative">
       <input
         className={className}
@@ -190,6 +194,6 @@ const TypeAhead = ({
         </ul>
       )}
     </div>
-  )
-}
+  ),
+)
 export default App
