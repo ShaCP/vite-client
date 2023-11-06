@@ -22,7 +22,6 @@
 .typeahead-container {
   display: grid;
   grid-auto-flow: column;
-  max-height: 30px;
 }
 
 /* Safari */
