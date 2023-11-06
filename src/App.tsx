@@ -6,7 +6,6 @@ import "./App.css"
 import { useEffect, useState } from "react"
 import { FetchBaseQueryError } from "@reduxjs/toolkit/dist/query"
 import { SerializedError } from "@reduxjs/toolkit"
-import { PokemonMatches } from "./features/entities/types"
 import React from "react"
 
 function useDebounce<T>(value: T, { delay = 1000, debounce = true }) {
@@ -64,7 +63,7 @@ function App() {
     // If I use "currentData" instead, there will be an empty array while it loads new results, causing a flash between results
     data: pokemonMatches,
     currentData: currentPokemonMatches,
-    isLoading: isLoadingMatches,
+    isFetching: isLoadingMatches,
     isError,
     error,
   } = useGetPokemonMatchesByNameQuery({
@@ -72,7 +71,7 @@ function App() {
     page,
   })
 
-  const { data: pokemon, isLoading: isLoadingPokemon } =
+  const { data: pokemon, isFetching: isLoadingPokemon } =
     useGetPokemonByNameQuery(selectedPokemonName, {
       skip: !selectedPokemonName,
     })
@@ -107,7 +106,7 @@ function App() {
     <div className="App flex flex-col items-center">
       <div className="w-56 mt-10">
         <TypeAhead
-          className="border-2 border-slate-200 p-1"
+          className="border-2 border-slate-200 p-1 typeahead-input"
           value={pokemonName ?? selectedPokemonName}
           onInputChange={onPokemonNameChange}
           onSelection={onPokemonSelection}
@@ -115,6 +114,7 @@ function App() {
           placeholder="Enter pokemon name"
           suggestions={suggestions}
           showPagination={page < (pokemonMatches?.totalPages ?? 0)}
+          paginationText="More results..."
         />
         {isLoadingPokemon ? (
           "...loading"
@@ -146,6 +146,7 @@ type TypeaheadProps = {
   className: string
   showPagination: boolean
   placeholder: string
+  paginationText: string
 }
 
 const TypeAhead = React.memo(
@@ -158,14 +159,18 @@ const TypeAhead = React.memo(
     showPagination = false,
     className,
     placeholder,
+    paginationText,
   }: TypeaheadProps) => (
-    <div className="flex flex-col relative">
-      <input
-        className={className}
-        placeholder={placeholder}
-        value={value}
-        onChange={(e) => onInputChange(e.target.value)}
-      />
+    <div className="flex flex-col relative typeahead-container">
+      <div className="typeahead-container">
+        <input
+          className={className}
+          placeholder={placeholder}
+          value={value}
+          onChange={(e) => onInputChange(e.target.value)}
+        />
+        <div className="loader"></div>
+      </div>
       {!!suggestions?.length && (
         <ul
           role="listbox"
@@ -191,7 +196,7 @@ const TypeAhead = React.memo(
               className="p-1 bg-slate-100 hover:bg-slate-200 cursor-pointer text-center"
               onClick={onPaginate}
             >
-              More results...
+              {paginationText}
             </li>
           )}
         </ul>
