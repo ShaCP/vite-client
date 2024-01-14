@@ -21,7 +21,7 @@ function useDebounce<T>(value: T, { delay = 1000, debounce = true }) {
       setDebouncedValue(value)
     }
     return () => clearTimeout(handler)
-  })
+  }, [debounce, delay, value])
 
   return debouncedValue
 }
