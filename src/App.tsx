@@ -4,10 +4,9 @@ import {
 } from "./features/entities/pokemonApi"
 import "./App.css"
 import { useEffect, useState } from "react"
-import { FetchBaseQueryError } from "@reduxjs/toolkit/dist/query"
 import { SerializedError } from "@reduxjs/toolkit"
-import React from "react"
 import { TypeAhead } from "./TypeAhead"
+import { FetchBaseQueryError } from "@reduxjs/toolkit/query"
 
 function useDebounce<T>(value: T, { delay = 1000, debounce = true }) {
   const [debouncedValue, setDebouncedValue] = useState(value)
@@ -85,7 +84,7 @@ function App() {
     } else {
       setSuggestions(pokemonMatches?.results ?? [])
     }
-  }, [pokemonMatches?.results, page, currentPokemonMatches?.results])
+  }, [currentPokemonMatches?.results, page, pokemonMatches?.results])
 
   const onPokemonNameChange = (value: string | null) => {
     setPokemonName(value)
@@ -116,6 +115,7 @@ function App() {
           suggestions={suggestions}
           showPagination={page < (pokemonMatches?.totalPages ?? 0)}
           paginationText="More results..."
+          isLoading={isLoadingMatches}
         />
         {isLoadingPokemon ? (
           "...loading"
@@ -136,18 +136,6 @@ function App() {
       </div>
     </div>
   )
-}
-
-export type TypeaheadProps = {
-  value: string
-  suggestions?: string[]
-  onInputChange: (value: string | null) => void
-  onSelection: (value: string) => void
-  onPaginate: () => void
-  className: string
-  showPagination: boolean
-  placeholder: string
-  paginationText: string
 }
 
 export default App

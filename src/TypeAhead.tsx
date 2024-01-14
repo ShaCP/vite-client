@@ -1,5 +1,17 @@
 import React from "react"
-import { TypeaheadProps } from "./App"
+
+export type TypeaheadProps = {
+    value: string
+    suggestions?: string[]
+    onInputChange: (value: string | null) => void
+    onSelection: (value: string) => void
+    onPaginate: () => void
+    className: string
+    showPagination: boolean
+    placeholder: string
+    paginationText: string
+    isLoading?: boolean
+  }
 
 export const TypeAhead = React.memo(
   ({
@@ -12,6 +24,7 @@ export const TypeAhead = React.memo(
     className,
     placeholder,
     paginationText,
+    isLoading = false
   }: TypeaheadProps) => (
     <div className="flex flex-col relative typeahead-container">
       <div className="typeahead-container">
@@ -21,7 +34,7 @@ export const TypeAhead = React.memo(
           value={value}
           onChange={(e) => onInputChange(e.target.value)}
         />
-        <div className="loader"></div>
+        {isLoading && <div className="loader"></div>}
       </div>
       {!!suggestions?.length && (
         <ul
